@@ -81,9 +81,3 @@ def read_devices_on_pages() -> list[dict]:
     all_devices = []
     all_devices = recursively_read_table_pages(session, response_content, all_devices)
     return all_devices
-
-
-if __name__ == '__main__':
-    devices = read_devices_on_pages()
-    for device in devices:
-        print(device)
