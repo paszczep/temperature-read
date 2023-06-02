@@ -41,12 +41,12 @@ def devices_readings_from_page(content: BeautifulSoup) -> list:
     table_rows = read_table_rows(content)
     devices_readings = list()
     for table_row in table_rows:
-        _, _, name, _, reading, date_time, _id = table_row
+        _, _, name, _, value, device_time, _id = table_row
         device_reading = {
+            'device_id': _id,
             'name': name,
-            'reading': reading,
-            'reading_time': date_time,
-            'device_id': _id}
+            'value': value,
+            'device_time': device_time}
         devices_readings.append(device_reading)
     return devices_readings
 
@@ -75,7 +75,7 @@ def recursively_read_table_pages(session: Session, response_content: bytes, all_
         return all_devices_readings
 
 
-def read_devices_on_pages() -> list[dict]:
+def read_all_thermometers() -> list[dict]:
     session = Session()
     response_content = login_and_get_first_view(session)
     all_devices = []
