@@ -4,6 +4,16 @@ from bs4 import BeautifulSoup
 from dotenv import dotenv_values
 from typing import Union
 from login import filled_login_params
+from datetime import datetime
+from dataclasses import dataclass
+
+@dataclass(frozen=True)
+class Measure:
+    device_id: int
+    device_name: str
+    temperature: str
+    measure_time: str
+    database_time: str
 
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -29,7 +39,7 @@ def login_and_get_first_view(session: Session) -> bytes:
     return response_content
 
 
-def read_table_rows(soup: BeautifulSoup) -> list:
+def measure_table_rows(soup: BeautifulSoup) -> list:
     table = [
         [cell.text.strip() for cell in row.find_all('td')]
         for row in soup.find_all('tr')]
@@ -37,17 +47,14 @@ def read_table_rows(soup: BeautifulSoup) -> list:
     return rows_with_values
 
 
-def devices_readings_from_page(content: BeautifulSoup) -> list:
-    table_rows = read_table_rows(content)
+def measures_from_page(content: BeautifulSoup) -> list:
+    table_rows = measure_table_rows(content)
     devices_readings = list()
+    time_now = str(datetime.now())
     for table_row in table_rows:
         _, _, name, _, value, device_time, _id = table_row
-        device_reading = {
-            'device_id': _id,
-            'name': name,
-            'value': value,
-            'device_time': device_time}
-        devices_readings.append(device_reading)
+        measure = Measure(_id, name, value, device_time, time_now)
+        devices_readings.append(measure)
     return devices_readings
 
 
@@ -61,7 +68,7 @@ def get_next_page_href(content_soup: BeautifulSoup) -> Union[str, IndexError]:
 
 def recursively_read_table_pages(session: Session, response_content: bytes, all_devices_readings: list) -> list:
     content_soup = BeautifulSoup(response_content, 'html.parser')
-    devices_readings = devices_readings_from_page(content_soup)
+    devices_readings = measures_from_page(content_soup)
     all_devices_readings += devices_readings
     try:
         next_href = get_next_page_href(content_soup)
