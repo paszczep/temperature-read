@@ -47,14 +47,14 @@ def measure_table_rows(soup: BeautifulSoup) -> list:
     return rows_with_values
 
 
-def measures_from_page(content: BeautifulSoup) -> list:
+def measures_from_page(content: BeautifulSoup) -> list[Measure]:
     table_rows = measure_table_rows(content)
     devices_readings = list()
     time_now = str(datetime.now())
     for table_row in table_rows:
         _, _, name, _, value, device_time, _id = table_row
-        measure = Measure(_id, name, value, device_time, time_now)
-        devices_readings.append(measure)
+        devices_readings.append(
+            Measure(_id, name, value, device_time, time_now))
     return devices_readings
 
 
@@ -66,10 +66,10 @@ def get_next_page_href(content_soup: BeautifulSoup) -> Union[str, IndexError]:
     return next_page_href
 
 
-def recursively_read_table_pages(session: Session, response_content: bytes, all_devices_readings: list) -> list:
+def recursively_read_table_pages(session: Session, response_content: bytes, all_measures: list) -> list[Measure]:
     content_soup = BeautifulSoup(response_content, 'html.parser')
-    devices_readings = measures_from_page(content_soup)
-    all_devices_readings += devices_readings
+    page_measures = measures_from_page(content_soup)
+    all_measures += page_measures
     try:
         next_href = get_next_page_href(content_soup)
     except IndexError:
@@ -77,12 +77,12 @@ def recursively_read_table_pages(session: Session, response_content: bytes, all_
     else:
         next_url = f'{base_url}{next_href}'
         response_content = session.get(next_url).content
-        recursively_read_table_pages(session, response_content, all_devices_readings)
+        recursively_read_table_pages(session, response_content, all_measures)
     finally:
-        return all_devices_readings
+        return all_measures
 
 
-def read_all_thermometers() -> list[dict]:
+def read_all_thermometers() -> list[Measure]:
     session = Session()
     response_content = login_and_get_first_view(session)
     all_devices = []
